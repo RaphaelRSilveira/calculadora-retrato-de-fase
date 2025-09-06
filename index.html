@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Retrato de Fase | Calculadora de Sistemas Dinâmicos</title>
     <meta name="description" content="Uma calculadora online e interativa para visualizar retratos de fase de sistemas lineares e não lineares. Obtenha autovalores e autovetores para análise completa.">
+    <!-- Tag de verificação do Google Search Console -->
     <meta name="google-site-verification" content="ThPmObv-Wf0OjG3UG06oWQONoTOfmc5BMTLeUJModNQ" />
     <!-- Inclui a biblioteca Tailwind CSS para estilização moderna e responsiva -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -87,13 +88,10 @@
                         </div>
                     </div>
 
-                    <div class="flex gap-4 mt-6">
-                        <button id="plotBtn" class="flex-1 py-3 px-6 rounded-xl text-white font-bold tracking-wide btn-gradient">
+                    <div class="flex flex-wrap gap-4 mt-6">
+                        <button id="plotBtn" class="flex-1 min-w-[200px] py-3 px-6 rounded-xl text-white font-bold tracking-wide btn-gradient">
                             <span id="btnText" data-lang="btn_plot">Gerar Retrato de Fase</span>
                             <i id="btnSpinner" class="fas fa-spinner fa-spin ml-2 hidden"></i>
-                        </button>
-                        <button id="resetBtn" class="py-3 px-6 rounded-xl text-gray-700 font-bold tracking-wide bg-white border border-gray-300 hover:bg-gray-100 transition-colors" data-lang="btn_reset">
-                            Reiniciar
                         </button>
                     </div>
                 </div>
@@ -103,6 +101,14 @@
                     <h2 class="text-xl font-semibold mb-4 text-gray-700" data-lang="analysis_section_title">Análise do Sistema</h2>
                     <div id="results" class="text-sm text-gray-600 space-y-3">
                         <p id="analysisStatus" class="text-center text-gray-400" data-lang="analysis_status_initial">Insira as equações e clique em 'Gerar'.</p>
+                        <div id="equilibriumPoints" class="hidden">
+                            <h3 class="font-medium text-gray-800" data-lang="equilibrium_points_title">Pontos de Equilíbrio:</h3>
+                            <ul id="equilibriumPointsList" class="list-disc list-inside ml-2"></ul>
+                        </div>
+                        <div id="systemMatrix" class="hidden">
+                             <h3 class="font-medium text-gray-800" data-lang="matrix_title">Matriz do Sistema:</h3>
+                             <pre id="matrixDisplay" class="bg-gray-200 p-2 rounded-lg text-sm font-mono"></pre>
+                        </div>
                         <div id="eigenvalues" class="hidden">
                             <h3 class="font-medium text-gray-800" data-lang="eigenvalues_title">Autovalores:</h3>
                             <ul id="eigenvaluesList" class="list-disc list-inside ml-2"></ul>
@@ -112,19 +118,40 @@
                             <ul id="eigenvectorsList" class="list-disc list-inside ml-2"></ul>
                         </div>
                         <div id="equilibrium" class="hidden">
-                            <h3 class="font-medium text-gray-800 mt-2" data-lang="equilibrium_title">Ponto de Equilíbrio:</h3>
+                            <h3 class="font-medium text-gray-800 mt-2" data-lang="equilibrium_title">Ponto de Equilíbrio (0,0):</h3>
                             <p id="equilibriumType" class="ml-2"></p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Coluna do Canvas -->
+            <!-- Coluna do Canvas e Controles -->
             <div class="bg-gray-50 p-6 rounded-2xl shadow-soft border border-gray-200 flex flex-col items-center justify-center">
-                <div class="w-full mb-4 text-center">
+                <div class="w-full mb-4 flex items-center justify-center h-8">
                     <span id="coordinatesDisplay" class="text-sm font-semibold text-gray-500"></span>
                 </div>
-                <canvas id="phasePortraitCanvas" width="500" height="500" class="w-full h-auto max-w-lg aspect-square"></canvas>
+                <div class="relative w-full h-auto max-w-lg aspect-square">
+                    <canvas id="phasePortraitCanvas" width="500" height="500" class="w-full h-auto max-w-lg aspect-square"></canvas>
+                    
+                    <!-- Botões de Zoom no canto superior direito -->
+                    <div class="absolute top-4 right-4 flex flex-col gap-2">
+                        <button id="zoomInBtn" class="w-10 h-10 rounded-full bg-white/75 text-gray-700 font-bold shadow-md hover:bg-white transition-colors">+</button>
+                        <button id="zoomOutBtn" class="w-10 h-10 rounded-full bg-white/75 text-gray-700 font-bold shadow-md hover:bg-white transition-colors">-</button>
+                    </div>
+                </div>
+                
+                <!-- Botões de visualização abaixo do canvas -->
+                <div class="flex flex-wrap gap-4 mt-6 justify-center w-full">
+                    <button id="resetViewBtn" class="py-3 px-6 rounded-xl text-gray-700 font-bold tracking-wide bg-white border border-gray-300 hover:bg-gray-100 transition-colors flex-1 min-w-[150px]" data-lang="btn_reset_view">
+                        Reiniciar Visualização
+                    </button>
+                    <button id="clearTrajectoriesBtn" class="py-3 px-6 rounded-xl text-gray-700 font-bold tracking-wide bg-white border border-gray-300 hover:bg-gray-100 transition-colors flex-1 min-w-[150px]" data-lang="btn_clear_trajectories">
+                        Limpar Trajetórias
+                    </button>
+                    <button id="animateBtn" class="py-3 px-6 rounded-xl text-gray-700 font-bold tracking-wide bg-white border border-gray-300 hover:bg-gray-100 transition-colors flex-1 min-w-[150px]" data-lang="btn_animate">
+                        Animação
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -152,10 +179,18 @@
             const eqXInput = document.getElementById('eqX');
             const eqYInput = document.getElementById('eqY');
             const plotBtn = document.getElementById('plotBtn');
-            const resetBtn = document.getElementById('resetBtn');
+            const resetViewBtn = document.getElementById('resetViewBtn');
+            const clearTrajectoriesBtn = document.getElementById('clearTrajectoriesBtn');
+            const animateBtn = document.getElementById('animateBtn');
+            const zoomInBtn = document.getElementById('zoomInBtn');
+            const zoomOutBtn = document.getElementById('zoomOutBtn');
             const btnText = document.getElementById('btnText');
             const btnSpinner = document.getElementById('btnSpinner');
             const analysisStatus = document.getElementById('analysisStatus');
+            const equilibriumPointsDiv = document.getElementById('equilibriumPoints');
+            const equilibriumPointsList = document.getElementById('equilibriumPointsList');
+            const systemMatrixDiv = document.getElementById('systemMatrix');
+            const matrixDisplay = document.getElementById('matrixDisplay');
             const eigenvaluesDiv = document.getElementById('eigenvalues');
             const eigenvectorsDiv = document.getElementById('eigenvectors');
             const equilibriumDiv = document.getElementById('equilibrium');
@@ -177,6 +212,10 @@
             let panY = 0;
             let isPanning = false;
             let startPanX, startPanY;
+            let isAnimating = false;
+            let animationFrameId;
+            let currentTrajectoryIndex = 0;
+            let currentPointIndex = 0;
 
             // Pontos iniciais de trajetória predefinidos
             const initialPoints = [
@@ -186,7 +225,7 @@
             ];
             // Array para armazenar trajetórias adicionadas pelo usuário
             let customTrajectories = [];
-
+            
             // Variáveis globais para os nós de expressão
             let nodeX, nodeY;
             
@@ -197,17 +236,22 @@
                     description: 'Uma calculadora online e interativa para visualizar retratos de fase de sistemas lineares e não lineares. Obtenha autovalores e autovetores para análise completa.',
                     equations_section_title: 'Equações do Sistema',
                     btn_plot: 'Gerar Retrato de Fase',
-                    btn_reset: 'Reiniciar',
+                    btn_reset_view: 'Reiniciar Visualização',
+                    btn_clear_trajectories: 'Limpar Trajetórias',
+                    btn_animate: 'Animação',
+                    btn_pause: 'Pausar',
                     analysis_section_title: 'Análise do Sistema',
                     analysis_status_initial: 'Insira as equações e clique em \'Gerar\'.',
                     analysis_status_calculating: 'Calculando...',
                     analysis_status_linear: 'Análise Completa (Sistema Linear)',
                     analysis_status_nonlinear: 'Análise Completa (Sistema Não-Linear)',
+                    equilibrium_points_title: 'Pontos de Equilíbrio:',
+                    matrix_title: 'Matriz do Sistema:',
                     eigenvalues_title: 'Autovalores:',
                     eigenvectors_title: 'Autovetores:',
-                    equilibrium_title: 'Ponto de Equilíbrio:',
+                    equilibrium_title: 'Ponto de Equilíbrio (0,0):',
                     error_title: 'Erro',
-                    error_syntax: 'Erro ao processar as equações. Certifique-se de que a sintaxe está correta. ',
+                    error_syntax: 'Erro de sintaxe. Verifique se a expressão é válida e se os caracteres são permitidos.',
                     btn_close: 'Fechar',
                     equilibrium_stable_spiral: 'Espiral Estável (Sumidouro)',
                     equilibrium_unstable_spiral: 'Espiral Instável (Fonte)',
@@ -225,17 +269,22 @@
                     description: 'An interactive online calculator to visualize phase portraits of linear and nonlinear systems. Get eigenvalues and eigenvectors for a complete analysis.',
                     equations_section_title: 'System Equations',
                     btn_plot: 'Generate Phase Portrait',
-                    btn_reset: 'Reset',
+                    btn_reset_view: 'Reset View',
+                    btn_clear_trajectories: 'Clear Trajectories',
+                    btn_animate: 'Animate',
+                    btn_pause: 'Pause',
                     analysis_section_title: 'System Analysis',
                     analysis_status_initial: 'Enter equations and click \'Generate\'.',
                     analysis_status_calculating: 'Calculating...',
                     analysis_status_linear: 'Analysis Complete (Linear System)',
                     analysis_status_nonlinear: 'Analysis Complete (Nonlinear System)',
+                    equilibrium_points_title: 'Equilibrium Points:',
+                    matrix_title: 'System Matrix:',
                     eigenvalues_title: 'Eigenvalues:',
                     eigenvectors_title: 'Eigenvectors:',
-                    equilibrium_title: 'Equilibrium Point:',
+                    equilibrium_title: 'Equilibrium Point (0,0):',
                     error_title: 'Error',
-                    error_syntax: 'Error processing equations. Make sure the syntax is correct. ',
+                    error_syntax: 'Syntax error. Please check if the expression is valid and if the characters are allowed.',
                     btn_close: 'Close',
                     equilibrium_stable_spiral: 'Stable Spiral (Sink)',
                     equilibrium_unstable_spiral: 'Unstable Spiral (Source)',
@@ -253,17 +302,22 @@
                     description: 'Una calculadora online e interactiva para visualizar retratos de fase de sistemas lineales y no lineales. Obtenga valores propios y vectores propios para un análisis completo.',
                     equations_section_title: 'Ecuaciones del Sistema',
                     btn_plot: 'Generar Retrato de Fase',
-                    btn_reset: 'Reiniciar',
+                    btn_reset_view: 'Reiniciar Vista',
+                    btn_clear_trajectories: 'Borrar Trayectorias',
+                    btn_animate: 'Animar',
+                    btn_pause: 'Pausar',
                     analysis_section_title: 'Análisis del Sistema',
                     analysis_status_initial: 'Introduzca las ecuaciones y haga clic en \'Generar\'.',
                     analysis_status_calculating: 'Calculando...',
                     analysis_status_linear: 'Análisis Completo (Sistema Lineal)',
                     analysis_status_nonlinear: 'Análisis Completo (Sistema no lineal)',
+                    equilibrium_points_title: 'Puntos de equilibrio:',
+                    matrix_title: 'Matriz del sistema:',
                     eigenvalues_title: 'Valores propios:',
                     eigenvectors_title: 'Vectores propios:',
-                    equilibrium_title: 'Punto de equilibrio:',
+                    equilibrium_title: 'Punto de equilibrio (0,0):',
                     error_title: 'Error',
-                    error_syntax: 'Error al procesar las ecuaciones. Asegúrese de que la sintaxis sea correcta. ',
+                    error_syntax: 'Error de sintaxis. Por favor, compruebe que la expresión sea válida y que se permitan los caracteres.',
                     btn_close: 'Cerrar',
                     equilibrium_stable_spiral: 'Espiral Estable (Sumidero)',
                     equilibrium_unstable_spiral: 'Espiral Inestable (Fuente)',
@@ -334,7 +388,10 @@
                 drawGrid();
                 drawAxes();
                 drawVectorField();
-                drawTrajectories();
+                // A animação irá chamar a função de desenho de trajetórias separadamente
+                if (!isAnimating) {
+                    drawTrajectories();
+                }
             }
 
             // Desenha o campo de vetores
@@ -372,7 +429,7 @@
                                 ctx.stroke();
 
                                 // Desenha a ponta da seta (opcional, mas melhora a visualização)
-                                const angle = Math.atan2(end.y - start.y, end.x - start.x);
+                                const angle = Math.atan2(end.y - start.y, end.x - start.y);
                                 ctx.beginPath();
                                 ctx.moveTo(end.x, end.y);
                                 ctx.lineTo(
@@ -425,6 +482,65 @@
                     }
                     ctx.stroke();
                 });
+            }
+            
+            // Função para a animação das trajetórias
+            function animateTrajectories() {
+                const allPoints = [...initialPoints, ...customTrajectories];
+                if (allPoints.length === 0) {
+                    isAnimating = false;
+                    return;
+                }
+                
+                // Redesenha o campo de vetores estático
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                drawGrid();
+                drawAxes();
+                drawVectorField();
+                
+                // Anima uma trajetória por vez
+                ctx.strokeStyle = '#f87171';
+                ctx.lineWidth = 1.5;
+                
+                let p = { x: allPoints[currentTrajectoryIndex].x, y: allPoints[currentTrajectoryIndex].y };
+                ctx.beginPath();
+                const startCanvas = toCanvas(p.x, p.y);
+                ctx.moveTo(startCanvas.x, startCanvas.y);
+
+                for (let i = 0; i < currentPointIndex; i++) {
+                    try {
+                        const scope = { x: p.x, y: p.y };
+                        const dX = nodeX.evaluate(scope);
+                        const dY = nodeY.evaluate(scope);
+
+                        p.x += dX * h;
+                        p.y += dY * h;
+
+                        const currentCanvas = toCanvas(p.x, p.y);
+                        ctx.lineTo(currentCanvas.x, currentCanvas.y);
+                    } catch (e) {
+                        break;
+                    }
+                }
+                ctx.stroke();
+
+                currentPointIndex += 10; // Incrementa para desenhar o próximo passo
+                if (currentPointIndex > trajectoryPoints) {
+                    // Passa para a próxima trajetória
+                    currentTrajectoryIndex++;
+                    currentPointIndex = 0;
+                    if (currentTrajectoryIndex >= allPoints.length) {
+                        // Fim da animação, retorna aos pontos iniciais e para
+                        currentTrajectoryIndex = 0;
+                        isAnimating = false;
+                        animateBtn.textContent = translations[languageSelector.value].btn_animate;
+                        return;
+                    }
+                }
+
+                if (isAnimating) {
+                    animationFrameId = requestAnimationFrame(animateTrajectories);
+                }
             }
 
             // Desenha os eixos X e Y
@@ -529,14 +645,41 @@
                 zoom *= delta;
                 draw();
             });
+            
+            zoomInBtn.addEventListener('click', () => {
+                zoom *= 1.2;
+                draw();
+            });
+            
+            zoomOutBtn.addEventListener('click', () => {
+                zoom /= 1.2;
+                draw();
+            });
 
             // Lógica do botão "Reiniciar Visualização"
-            resetBtn.addEventListener('click', () => {
+            resetViewBtn.addEventListener('click', () => {
                 zoom = 1;
                 panX = 0;
                 panY = 0;
+                draw();
+            });
+
+            // Lógica do botão "Limpar Trajetórias"
+            clearTrajectoriesBtn.addEventListener('click', () => {
                 customTrajectories = [];
                 draw();
+            });
+            
+            // Lógica para animar/pausar
+            animateBtn.addEventListener('click', () => {
+                isAnimating = !isAnimating;
+                if (isAnimating) {
+                    animateBtn.textContent = translations[languageSelector.value].btn_pause;
+                    animationFrameId = requestAnimationFrame(animateTrajectories);
+                } else {
+                    animateBtn.textContent = translations[languageSelector.value].btn_animate;
+                    cancelAnimationFrame(animationFrameId);
+                }
             });
 
             // Lógica principal do botão "Gerar"
@@ -550,18 +693,21 @@
                 const eqY = eqYInput.value.trim();
 
                 if (!eqX || !eqY) {
-                    showError(translations[lang].error_syntax.split('.')[0] + '.');
+                    showError(translations[lang].error_syntax);
                     resetButton(lang);
                     return;
                 }
 
                 // Limpa resultados anteriores
                 analysisStatus.textContent = translations[lang].analysis_status_calculating;
+                systemMatrixDiv.classList.add('hidden');
                 eigenvaluesDiv.classList.add('hidden');
                 eigenvectorsDiv.classList.add('hidden');
                 equilibriumDiv.classList.add('hidden');
+                equilibriumPointsDiv.classList.add('hidden');
                 eigenvaluesList.innerHTML = '';
                 eigenvectorsList.innerHTML = '';
+                equilibriumPointsList.innerHTML = '';
                 
                 try {
                     // Compila as expressões para avaliação rápida
@@ -576,13 +722,12 @@
                         analysisStatus.textContent = translations[lang].analysis_status_linear;
                     } else {
                         analysisStatus.textContent = translations[lang].analysis_status_nonlinear;
-                        eigenvaluesDiv.classList.add('hidden');
-                        eigenvectorsDiv.classList.add('hidden');
-                        equilibriumDiv.classList.add('hidden');
+                        // Para sistemas não lineares, tentamos encontrar os pontos de equilíbrio
+                        findEquilibriumPoints(eqX, eqY, lang);
                     }
 
                 } catch (e) {
-                    showError(translations[lang].error_syntax + e.message);
+                    showError(translations[lang].error_syntax);
                 } finally {
                     resetButton(lang);
                 }
@@ -593,6 +738,72 @@
                 btnText.textContent = translations[lang].btn_plot;
                 btnSpinner.classList.add('hidden');
                 plotBtn.disabled = false;
+            }
+            
+            // Função para encontrar pontos de equilíbrio (solver numérico)
+            function findEquilibriumPoints(eqX, eqY, lang) {
+                equilibriumPointsDiv.classList.remove('hidden');
+                equilibriumPointsList.innerHTML = '';
+
+                // A função f(x,y) = [dX/dt, dY/dt]
+                const f = (vars) => {
+                    const scope = { x: vars[0], y: vars[1] };
+                    const dx = nodeX.evaluate(scope);
+                    const dy = nodeY.evaluate(scope);
+                    return [dx, dy];
+                };
+
+                // Amostra uma grade de pontos para encontrar múltiplos pontos de equilíbrio
+                const gridStep = 2;
+                const range = 10;
+                let foundPoints = [];
+
+                for (let x = -range; x <= range; x += gridStep) {
+                    for (let y = -range; y <= range; y += gridStep) {
+                        const startGuess = [x, y];
+                        try {
+                            // Implementação simples do método de Newton para encontrar raízes
+                            let currentGuess = startGuess;
+                            for (let i = 0; i < 20; i++) { // 20 iterações para convergência
+                                const J_x_eq = math.derivative(eqX, 'x').evaluate({x: currentGuess[0], y: currentGuess[1]});
+                                const J_y_eq = math.derivative(eqY, 'x').evaluate({x: currentGuess[0], y: currentGuess[1]});
+                                const J_x_eq_y = math.derivative(eqX, 'y').evaluate({x: currentGuess[0], y: currentGuess[1]});
+                                const J_y_eq_y = math.derivative(eqY, 'y').evaluate({x: currentGuess[0], y: currentGuess[1]});
+
+                                const J = [[J_x_eq, J_x_eq_y], [J_y_eq, J_y_eq_y]];
+                                const F = f(currentGuess);
+                                
+                                const invJ = math.inv(J);
+                                const delta = math.multiply(invJ, F);
+                                currentGuess = math.subtract(currentGuess, delta);
+                                
+                                // Verifica a convergência
+                                if (math.norm(F) < 1e-6) {
+                                    // Verifica se o ponto já foi encontrado para evitar duplicatas
+                                    const isDuplicate = foundPoints.some(p => Math.abs(p.x - currentGuess[0]) < 1e-4 && Math.abs(p.y - currentGuess[1]) < 1e-4);
+                                    if (!isDuplicate) {
+                                        foundPoints.push({ x: currentGuess[0], y: currentGuess[1] });
+                                    }
+                                    break;
+                                }
+                            }
+                        } catch (e) {
+                            // Ignora erros de convergência
+                        }
+                    }
+                }
+                
+                if (foundPoints.length > 0) {
+                    foundPoints.forEach(p => {
+                        const li = document.createElement('li');
+                        li.textContent = `(${p.x.toFixed(3)}, ${p.y.toFixed(3)})`;
+                        equilibriumPointsList.appendChild(li);
+                    });
+                } else {
+                    const li = document.createElement('li');
+                    li.textContent = 'Nenhum ponto de equilíbrio encontrado (análise numérica).';
+                    equilibriumPointsList.appendChild(li);
+                }
             }
 
             // Função para tentar analisar o sistema como linear
@@ -621,6 +832,10 @@
                 
                 // Se a matriz é [[a, b], [c, d]], é linear.
                 const A = [[a, b], [c, d]];
+                
+                systemMatrixDiv.classList.remove('hidden');
+                const matrixText = `[ ${a.toFixed(3)},  ${b.toFixed(3)} ]\n[ ${c.toFixed(3)},  ${d.toFixed(3)} ]`;
+                matrixDisplay.textContent = matrixText;
 
                 try {
                     // Calcula autovalores e autovetores usando math.js
@@ -629,6 +844,11 @@
                     eigenvaluesDiv.classList.remove('hidden');
                     eigenvectorsDiv.classList.remove('hidden');
                     equilibriumDiv.classList.remove('hidden');
+                    equilibriumPointsDiv.classList.remove('hidden');
+
+                    const li = document.createElement('li');
+                    li.textContent = `(0.000, 0.000)`;
+                    equilibriumPointsList.appendChild(li);
 
                     const lambda1 = eigs.values[0];
                     const lambda2 = eigs.values[1];
@@ -639,8 +859,8 @@
                     // Exibe os autovalores
                     const formatValue = (val) => {
                         return typeof val === 'object' && val.isComplex
-                            ? `${val.re.toFixed(2)} ${val.im >= 0 ? '+' : ''} ${val.im.toFixed(2)}i`
-                            : val.toFixed(2);
+                            ? `${val.re.toFixed(3)} ${val.im >= 0 ? '+' : ''} ${val.im.toFixed(3)}i`
+                            : val.toFixed(3);
                     };
 
                     const li1 = document.createElement('li');
@@ -652,8 +872,8 @@
 
                     // Exibe os autovetores
                     const formatVector = (vec) => {
-                        const x = typeof vec[0] === 'object' && vec[0].isComplex ? vec[0].toString() : vec[0].toFixed(2);
-                        const y = typeof vec[1] === 'object' && vec[1].isComplex ? vec[1].toString() : vec[1].toFixed(2);
+                        const x = typeof vec[0] === 'object' && vec[0].isComplex ? `${vec[0].re.toFixed(3)} ${vec[0].im >= 0 ? '+' : ''} ${vec[0].im.toFixed(3)}i` : vec[0].toFixed(3);
+                        const y = typeof vec[1] === 'object' && vec[1].isComplex ? `${vec[1].re.toFixed(3)} ${vec[1].im >= 0 ? '+' : ''} ${vec[1].im.toFixed(3)}i` : vec[1].toFixed(3);
                         return `[${x}, ${y}]`;
                     };
 
@@ -709,4 +929,3 @@
     </script>
 </body>
 </html>
-
